@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+ <meta charset="utf-8">
+ <title>Saludo con Dojo!</title>
+ <script src="js/dojo/dojo.js"
+         data-dojo-config="async: true"></script>
+</head>
+<body>
+ <h1 id="saludo">Hola Mundo</h1>
+ <script>
+  require(["dojo/dom", "dojo/fx", "dojo/domReady!"], function(dom, fx){
+   // Obtenemos el objeto
+   var saludo = dom.byId("saludo");
+   saludo.innerHTML += " con Dojo 1.7";
+
+   // Una animacion divertida !
+   fx.slideTo({
+    top: 200,
+    left: 400,
+    node: saludo
+   }).play();
+  });
+ </script>
+</body>
+</html>

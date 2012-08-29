@@ -1,0 +1,44 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!DOCTYPE HTML>
+<html lang="es">
+	<head>
+		<meta charset="utf-8">
+		<title>Prueba Dialogo</title>
+		<link rel="stylesheet" href="js/dijit/themes/claro/claro.css" />		
+		<!-- cargamos dojo y configuramos de forma declarativa -->
+		<script src="js/dojo/dojo.js" data-dojo-config="isDebug: true, async: true, parseOnLoad: true"></script>		
+		<script>
+		require(["dojo/parser", 
+					/* basic dijit classes */
+					"dijit/form/ValidationTextBox","dijit/form/Button","dijit/form/Form",
+					/* basic dojox classes */
+					"dojox/form/CheckedMultiSelect", "dojo/domReady!"]);
+		function enviar(){
+			form = dijit.byId("form")
+			if(!form.validate()){
+				alert('Ta mal!');
+				return false;
+			}
+		}
+			
+		</script>
+</head>
+<body class="claro">
+
+<form dojoType="dijit.form.Form" id="form" method="post">
+		<input type="text" 
+		required="true" 
+		name="nombre" 
+		id="nombre" 
+		placeholder="Tu nombre" 
+		dojoType="dijit.form.ValidationTextBox" 
+		missingMessage="Pon el nombre!" />
+				
+		<input value="Enviar" 
+		label="Enviar" id="enviar" onClick="enviar" dojoType="dijit.form.Button" />
+
+		</form>
+		
+</body>
+</html>

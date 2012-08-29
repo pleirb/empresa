@@ -1,0 +1,46 @@
+﻿.results 
+{
+	margin: 1em;
+	border: 1px solid #999;
+	padding: 1em;
+}        
+*
+{
+    outline: none !important;
+}
+
+body 
+{
+    margin: 0;
+    padding: 0;
+    background: white;
+    color: #333;
+    font-family: Lucida Sans,Lucida Grande,Arial !important;
+    font-size: 13px !important;
+}
+
+button 
+{
+	-webkit-transition: background-color 0.2s linear;
+	border-radius:3px;
+	-moz-border-radius: 4px 4px 4px 4px;
+	-moz-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
+	background-color: #E4F2FF;
+	background-image: url("../dojo/dijit/themes/claro/form/images/button.png");
+	background-repeat: repeat-x;
+	background-position: center top;
+	padding: 2px 8px 4px;
+	border: 1px solid #769DC0;
+	font-size:1em;
+}
+
+button:hover 
+{
+    background-color: #AFD9FF;
+    color: #000000;
+}
+
+h1 
+{
+	font-size:1.5em;
+}

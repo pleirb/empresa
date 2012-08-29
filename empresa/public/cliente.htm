@@ -1,0 +1,424 @@
+<!DOCTYPE HTML>
+<html lang="es">
+	<head>
+		<meta charset="utf-8">
+    	<title>Clientes</title>   	
+		<link rel="stylesheet" href="js/dojox/grid/resources/Grid.css"/>
+		<link rel="stylesheet" href="js/dojox/grid/resources/claroGrid.css"/>
+		<link rel="stylesheet" href="js/dijit/themes/claro/claro.css"/>
+	    <link href="css/Style.css" rel="stylesheet" type="text/css" />
+		<!-- load dojo and provide config via data attribute -->
+		<script src="js/dojo/dojo.js"
+			data-dojo-config="isDebug: true, async: true, parseOnLoad: true">
+		</script>
+	
+	
+	<style type="text/css" >            
+		html1, body1 {
+        	margin: 0;
+            padding: 0;
+            height:100%;
+            overflow:hidden;}
+		.grid {
+	    	width: 100%;
+	        height: 100%;
+	        border: 0px solid #999;}
+		html, body {
+    		width: 100%;
+    		height: 100%;
+    		margin: 0;
+    		overflow:hidden;
+			padding: 0;}
+		#borderContainer {
+    		width: 100%;
+    		height: 100%;}
+		iframe { 
+			display:block; 
+			width:100%; 
+			border:none;
+			height:100%; }
+	</style>
+	<script type="text/javascript">
+    	var deleteUrl = "clientesjson";
+        var editUrl = "post.htm";
+        var gridColumns = [  // name is the column name, field is the fieldname in the store 
+			{name:"Id", field:"id", width: "200px"},
+    		{name:"Nombre", field:"nombre", width: "200px", editable:true},
+    		{name:"Telefono", field:"telefono", width: "200px"},
+    		{name:"Nacimiento", field:"nacimiento", width: "200px"}	] ;
+        var idColumnName = "id"; 
+        var defaultSortField = "nombre";
+        var defaultSortDescending = false;
+        var caseInsitiveSortedColumns =["nombre","telefono","nacimiento"]; // !*** Add columns that should be sorted case insensitive here !
+		var popUpDialogWidth = "600px";         // Height of the popup Dialog
+		var popUpDialogHeight = "380px";        // Width of the popup Dialog
+ 		var popUpDialogIframeWidth = "100%";   // It's not necessary to adjust this
+		var popUpDialogIframeHeight = "330px"; // Adjust this if you change the Dialogs height
+       var gridData= "clientesjson";  // The data for the grid (loaded in .aspx.cs)
+		var grid, gridStore; // The grid object and the gridstore object (will be instantiated later)
+		var toolbar;
+		var popupDialog;
+        var columnFieldNameWithoutIdColumn = new Array() ; // Will be generated at runtime. Used when saving data
+       var columnFieldNameIdColumn = "";
+	    require([   "dijit/registry",
+	        "dojox/grid/DataGrid", 
+			"dojo/data/ItemFileWriteStore", 
+            "dojo/date/locale", 
+            "dojo/_base/lang", 
+            "dijit/form/HorizontalSlider", 
+            "dojox/grid/cells/dijit", 
+            "dojox/grid/Selection", 
+            "dojo/store/JsonRest", 
+            "dojo/store/Memory", 
+            "dojo/store/Cache", 
+            "dojo/data/ObjectStore", 
+            "dojo/query", 
+            "dijit/Toolbar", 
+            "dijit/form/Button", 
+            "dojo/_base/array", 
+            "dojo/parser", 
+            "dijit/layout/ContentPane", 
+            "dijit/layout/BorderContainer", 
+            "dijit/Dialog", 
+            'dojo/data/ItemFileWriteStore', 
+            'dojo/io/script'],
+		function (registry,
+			DataGrid, 
+        	ItemFileWriteStore, 
+            locale, 
+            lang, 
+            HorizontalSlider, 
+            Cells_dijit, 
+            Selection, 
+            JsonRest, 
+            Memory, 
+            Cache, 
+            ObjectStore, 
+            query, 
+            Toolbar, 
+            Button, 
+            array, 
+            parser, 
+            cContentPane, 
+            borderContainer, 
+            dialog, 
+            ItemFileWriteStore, 
+            Script){
+            // Generate a list of the datafileds for all columns except the id column, this will be stored in a separate varaiable
+            // This data is needed everytime a record is updated 
+            	dojo.forEach(gridColumns, function (item,index){
+                    if (item.field != idColumnName)
+                        columnFieldNameWithoutIdColumn.push(item.field);
+                    else
+                        columnFieldNameIdColumn = item.field;                    
+                });
+                
+                //Special case id field is not part of the shown columns
+                if (columnFieldNameIdColumn.toString().length == 0 )
+                    columnFieldNameIdColumn = idColumnName;
+
+                // Create the toolbar buttons based on the definition in this array
+                // format: id, label, image
+                var buttonDefinition = [
+                                        ["new", "Nuevo", "NewPage"],
+                                        ["edit", "Editar", "Copy"],
+                                        ["delete", "Borrar", "Delete"]
+                                       ];
+                toolbar = new Toolbar({}, "toolbar"); // The last parameter defines the span tag that takes the toolbar
+
+                array.forEach(buttonDefinition, function (but)
+                {
+                    var button = new Button(
+                    {
+                        // Note: The Dojo docu says buttons should always specify a label for accessibility reasons.
+                        // To hide the label just set showLabel:false
+                        label: but[1],
+                        showLabel: true,
+                        iconClass: "dijitEditorIcon dijitEditorIcon" + but[2],
+                        id: but[0],
+                        onClick: toolbarButtonClick
+                    });
+                    toolbar.addChild(button);
+                });               
+             
+                //Toolbar is set up, lets create the gridstore
+                gridStore = Cache(JsonRest({target:gridData}), Memory());
+                //Create the case insensitive columns comparator
+                gridStore.comparatorMap={};
+                
+                array.forEach(caseInsitiveSortedColumns, function (colName){
+                	gridStore.comparatorMap[colName] = caseInsensitiveComparator;
+                });
+             	// Now create the grid itself
+				grid = new DataGrid({
+					"class": "grid",
+					rowsPerPage: "10000",
+					width: "auto",
+					store: dataStore = ObjectStore({objectStore: gridStore}),
+					// ATENCION !!!!! RESOLVER LINEA DE ABAJO !!
+					//sortFields:[{attribute:defaultSortField,descending: defaultSortDescending}], // No funciona porque hay que hacer la logica de orden en el servidor
+					structure: gridColumns  // The column setup
+				}, "grid"); // grid is the HTML div tag where we create the grid in
+				//grid.startup();
+                
+                // Select the first row to make it keyboard accessible
+                setFocusToGridAfterTimeout();
+
+                // Select the row when it gets the focus when the cell get the focus
+                dojo.connect(grid, "onCellFocus", grid, function (cellObject, rowIndex)
+                {
+                    grid.selection.select(rowIndex);
+                });
+
+                // Start editing on double click
+                dojo.connect(grid, "onRowDblClick", grid, function (e)
+                {
+                    var id = null;
+		            try
+		            {
+		                id = grid.store.getValues(grid.selection.getSelected()[0], idColumnName);	
+                        startEditingInPopup(id);	                
+		            }
+		            catch (e)
+		            {
+		            }
+                });
+
+                // Start editing when pressing enter
+                dojo.connect(grid, "onKeyPress", function (e)
+                {
+                    switch(e.charOrCode)
+                    {
+                        case dojo.keys.ENTER:
+                        {
+                            var id = null;
+		                    try
+		                    {
+		                        id = grid.store.getValues(grid.selection.getSelected()[0], idColumnName);	
+                                startEditingInPopup(id);	                
+		                    }
+		                    catch (e)
+		                    {
+		                    }
+                            break;
+                        }
+                        case dojo.keys.DELETE:
+                        {
+                            deleteSelectedRowAfterConfirmation();
+                            break;
+                        }
+                        case dojo.keys.F2:
+                        {
+                            startEditingInPopup("");
+                            break;
+                        }
+                    }
+                });
+            });
+            
+            // Additional functions, main initilisation ended
+            function caseInsensitiveComparator (a,b) 
+            {
+                if (a.toLowerCase() < b.toLowerCase())
+                {
+                    return -1
+                } 
+                else if (a.toLowerCase() > b.toLowerCase()) 
+                {
+                    return 1;
+                }
+                else 
+                {
+                   return 0;
+                }
+            }
+
+            // Sets the focus to the grid after a timeout of 100 ms
+            function setFocusToGridAfterTimeout()
+            {
+                window.setTimeout(function() 
+                {
+                    if (grid.rowCount > 0)
+                    {
+                        // If nothing is selected, select first row, first column (e.g. after initial loading)
+                        var currSelectedRowIndex = 0;
+                        var currSelectedCellIndex = 0;
+                        try
+                        {
+                            if (grid.focus.rowIndex>=0)  //-1 means no selection !
+                                currSelectedRowIndex = grid.focus.rowIndex;
+                            if (grid.focus.cell.index>=0) //-1 means no selection !
+                                currSelectedCellIndex = grid.focus.cell.index;
+                                
+                        }
+                        catch (e)
+                        {
+                        }
+                        grid.focus.setFocusIndex(currSelectedRowIndex,currSelectedCellIndex);
+                        grid.focus.focusGrid();
+                    }
+                },100); 
+            }
+
+            // Is called by code from popup when a new record was added to the database and 
+            // now has to be added to the data store of the grid.
+		    function newRecordSaved(val)
+		    {
+		        popupDialog.hide();
+                var arrNewData = new Array();
+                var indexFieldColumnIsVisibleInGrid = false;  // index column might not be visible in the grid but we need the id value for hte store !
+                // Loop through all columns in the grid and set the new values
+                dojo.forEach(gridColumns, function (column,index)
+                {
+                    if (column.field == idColumnName)
+                        indexFieldColumnIsVisibleInGrid = true;
+                    arrNewData[column.field] = val[column.field];
+                });
+                if (!indexFieldColumnIsVisibleInGrid)
+                    arrNewData[idColumnName] = val[idColumnName];
+                grid.store.newItem(arrNewData);
+		        grid.sort();
+            }
+
+
+            // Is called by code from popup when a record was updated
+		    function editedRecordSaved(val)
+		    {
+		        popupDialog.hide();
+             
+                var selectedId = val[columnFieldNameIdColumn];
+		        gridStore.fetchItemByIdentity({identity: selectedId, onItem: function (item)
+                    {
+                        // Loop through all columns except the id column in the grid and set the updated values
+                        dojo.forEach(columnFieldNameWithoutIdColumn, function (fieldName,index)
+                        {
+                            gridStore.setValue(item, fieldName, val[fieldName]);
+                        });
+                    }
+                });
+		    }
+
+            // Shows the edit/add popup
+		    function startEditingInPopup(id2Edit)
+		    {
+            	alert("que pasa!");
+		    	dojo.byId("ajaxDialogo").show();
+		        /*popupDialog = new dijit.Dialog({
+		            title: "Edit record with id: " + id2Edit, // The dialog's title
+		            content: "<iframe src=\"" + editUrl + "\" width=\"" + popUpDialogIframeWidth +"\" style=\"height:" + popUpDialogIframeHeight +";\" ></iframe>", // The dialog's content
+		            style: "width:" + popUpDialogWidth + ";height:" + popUpDialogHeight +";" // Hard-code the dialog width
+		        });
+                dojo.connect(popupDialog, "onHide",function ()
+                {
+                    // Set the focus back to the grid when the popup closed (give the user some convenience)
+                    setFocusToGridAfterTimeout();
+                    return true;
+                });
+		        popupDialog.show();*/
+		    }
+
+            // Deletes the currently selected row
+            function deleteSelectedRowAfterConfirmation()
+            {
+                var id = null;
+		        try
+		        {
+		            id = grid.store.getValues(grid.selection.getSelected()[0], idColumnName);		                
+		        }
+		        catch (e)
+		        {
+		        }
+
+		        if (id == null)
+		        {
+		            alert("No hay ningun registro para borrar seleccionado !");
+		            return;
+		        }
+		        else
+		        {
+                    var checkResult = confirm("Seguro que quieres borrar el registro con id " + id + " ?");
+                    if (checkResult == false)
+                    {
+                        setFocusToGridAfterTimeout();
+                        return;
+                    }           
+
+                    var jsonpArgs = 
+                    {
+                        url: deleteUrl ,
+                        callbackParamName: "callback",
+                        preventCache: true,
+                        content: 
+                        {
+                            id: id.toString()
+                        },
+                        load: function(responseData){
+                        	grid.store.deleteItem(grid.selection.getSelected()[0]);
+                        	//grid.store.save(); //No sabemos si es necesario pero asi funciona y mas rapido
+                        	setFocusToGridAfterTimeout(); 
+                        },
+                        error: function(error){
+                            alert('Error al enviar la orden de borrado al servidor!');
+                        }
+                    };
+                    dojo.xhrDelete(jsonpArgs);
+                    //dojo.io.script.get(jsonpArgs);
+                    
+	            }
+            }
+
+            // Handle the toolbar clicks
+		    function toolbarButtonClick(e)
+		    {
+		        if (this.id == "edit")
+		        {
+		            var id = null;
+		            try
+		            {
+		                id = grid.store.getValues(grid.selection.getSelected()[0], idColumnName);		                
+		            }
+		            catch (e)
+		            {
+		            }
+
+		            if (id == null)
+		            {
+		                alert("Nothing selected !");
+		                return;
+		            }
+		            else
+		            {
+		                startEditingInPopup(id);
+		            }
+		        }
+		        else if (this.id == "new")
+		        {
+                    startEditingInPopup("");
+		        }
+                else  if (this.id == "delete")
+                {
+                    deleteSelectedRowAfterConfirmation();
+                }
+		    }
+            function closePopupAndShowError(errorText)
+            {
+                popupDialog.hide();
+                alert(errorText);
+            }
+
+		</script>
+</head>
+<body class="claro" >
+
+    <div  data-dojo-type="dijit.layout.BorderContainer" data-dojo-props="design:'sidebar', gutters:true, liveSplitters:true" id="borderContainer">
+	    <div data-dojo-type="dijit.layout.ContentPane" data-dojo-props="splitter:false, region:'top'">
+	        <span id="toolbar"></span>
+	    </div>
+	    <div data-dojo-type="dijit.layout.ContentPane" data-dojo-props="splitter:false, region:'center'">
+	        <div id="grid"  ></div>
+	    </div>
+	</div>
+	<div data-dojo-type="dijit.Dialog" style="width:400px;" data-dojo-props="title:'Cliente'" id="ajaxDialogo">
+	</div>
+</body>
+</html>

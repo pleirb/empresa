@@ -1,0 +1,100 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!DOCTYPE HTML>
+<html lang="es">
+	<head>
+		<meta charset="utf-8">
+		<title>Prueba Dialogo</title>
+		<link rel="stylesheet" href="js/dijit/themes/claro/claro.css" />		
+		<!-- cargamos dojo y configuramos de forma declarativa -->
+		<script src="js/dojo/dojo.js" data-dojo-config="isDebug: true, async: true, parseOnLoad: true"></script>		
+		<script>
+		require(["dojo/parser",
+		         "dijit/Dialog", 
+		         "dijit/Toolbar",			         
+		         "dijit/form/Form", 
+		         "dijit/form/Button", 
+		         "dijit/form/DateTextBox",
+		         "dijit/form/NumberTextBox",
+		         "dijit/form/ValidationTextBox", 
+		         "dijit/layout/ContentPane",
+		         "dojo/_base/xhr", 
+		         "dojo/domReady!"], function(){	
+			mostrarForm = function() { // Funcion para mostrar el formulario
+				dijit.byId("dialogo").show(); //Mostramos el dialogo que contiene el formulario 
+			}	
+			
+			mandarForm = function(){   
+				form = dijit.byId("form")
+				if(!form.validate()){
+					alert('Ta mal!');
+					return false;
+				}					
+				    var xhrArgs = {
+				      form: dojo.byId("form"),
+				      postData: dojo.formToJson("form"),
+				      load: function(data){
+				    	dijit.byId("dialogo").hide(); //Ocultamos el Dialogo que contiene el formulario
+				        dojo.byId("response").innerHTML = "Formulario posteado !";
+				      },
+				      error: function(error){
+				    	  dojo.byId("response").innerHTML = "Error al enviar";
+				      }
+				    }
+				    dojo.byId("response").innerHTML = "El formulario se esta enviando"
+				    var deferred = dojo.xhrPost(xhrArgs);
+			}
+		});		
+		</script>
+</head>
+<body class="claro">
+	<div data-dojo-type="dijit.layout.ContentPane" data-dojo-props="splitter:false, region:'top'">
+		<div id="toolbar" data-dojo-type="dijit.Toolbar">
+			<div data-dojo-type="dijit.form.Button" onclick="mostrarForm" id="new" data-dojo-props="iconClass:'dijitEditorIcon dijitEditorIconNewPage', showLabel:true">Nuevo</div>
+		    <div data-dojo-type="dijit.form.Button" id="edit" data-dojo-props="iconClass:'dijitEditorIcon dijitEditorIconCopy', showLabel:true">Editar</div>
+		    <div data-dojo-type="dijit.form.Button" onclick="eliminarCliente" id="delete" data-dojo-props="iconClass:'dijitEditorIcon dijitEditorIconDelete', showLabel:true">Borrar</div>
+		</div>
+	</div>
+
+	<div class="dijitHidden">		
+		<div data-dojo-type="dijit.Dialog" style="width:400px;" data-dojo-props="title:'Cliente'" id="dialogo">
+		<form action="clientesjson" id="form" dojoType="dijit.form.Form" method="POST">
+			<strong><label for="nombre" style="display:inline-block;width:100px;">Nombre:</label></strong>
+			<input type="text" 
+				required="true" 
+				name="nombre" 
+				id="nombre" 
+				placeholder="Pon el nombre" 
+				dojoType="dijit.form.ValidationTextBox" 
+				missingMessage="Es obligatorio poner el nombre !" />
+			<br />
+			<strong><label for="telefono" style="display:inline-block;width:100px;">Telefono:</label></strong>
+			<input type="text" 
+				required="true" 
+				name="telefono" 
+				id="telefono" 
+				placeholder="Pon un telefono mayor a 20" 
+				dojoType="dijit.form.NumberTextBox" 
+				constraints="{min:20,max:20000,places:0}"
+				invalidMessage="Eso no es un numero"
+				missingMessage="Es obligatorio poner el telefono !" />
+			<br />
+			<strong><label for="nacimiento" style="display:inline-block;width:100px;">Nacimiento:</label></strong>
+			<input type="text" 
+				required="true" 
+				name="nacimiento" 
+				id="nacimiento" 
+				placeholder="Pon la fecha"
+				dojoType="dijit.form.DateTextBox"
+				missingMessage="Es obligatorio poner la fecha !" />
+			<br />
+			<div class="dijitDialogPaneActionBar">
+	               <button id="submitButton" onclick="mandarForm" data-dojo-type="dijit.form.Button">Guardar</button>
+	       	</div>				
+		</form>
+		</div>
+	</div>		
+
+<div id="response"></div>
+</body>
+</html>

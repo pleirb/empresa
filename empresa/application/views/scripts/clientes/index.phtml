@@ -1,0 +1,232 @@
+<!DOCTYPE HTML>
+<html lang="es">
+	<head>
+		<meta charset="utf-8">
+		<title>Prueba Dialogo</title>
+		<!-- ESTILO DE LOS COMPONENTES DIJIT DE DOJO -->
+		<link rel="stylesheet" href="js/dijit/themes/claro/claro.css" />
+		<!-- ESTILO DE LA GRILLA (OBLIGATORIO) -->
+		<link rel="stylesheet" href="js/dojox/grid/resources/claroGrid.css" />
+		<style type="text/css">
+			#grilla {
+			    height: 300px;
+			}
+		</style>		
+		<!-- Cargamos dojo y configuramos de forma declarativa -->
+		<script src="js/dojo/dojo.js" data-dojo-config="async: true, parseOnLoad: true"></script>		
+		<script>		
+			require(["dijit/Dialog", 
+			         "dijit/Toolbar",			  
+			         "dijit/form/Form", 
+			         "dijit/form/Button", 
+			         "dijit/form/TextBox", 
+			         "dijit/form/DateTextBox", 
+			         "dijit/form/NumberTextBox",
+			         "dijit/form/ValidationTextBox", 
+			         "dijit/layout/ContentPane", 
+			         "dijit/layout/BorderContainer", 			         
+			         "dojox/grid/DataGrid", //Soporte para la grilla (ver declaracion de css y estilo). Se declara en forma de tabla con: data-dojo-type="dojox.grid.DataGrid"
+			         "dojox/data/JsonRestStore",
+			         //"dojox/data/QueryReadStore", 
+			         "dojo/_base/xhr"], 
+			     // Aca definimos las cosas que usaremos en codigo javascript, si definimos en html no es necesario poner aqui
+			    function(){  // Definimos xhr para poder postear  			
+				
+				store = new dojox.data.JsonRestStore({
+					target:"clientesjson", 
+					idAttribute:"id"
+				});
+			    //store = new dojox.data.QueryReadStore({url:"clientesjson", idAttribute:"id"});
+				
+				buscar = function(){
+					var nombre = dojo.byId("buscar").value;
+					//dojo.byId("response").innerHTML = nombre;
+					var grilla = dijit.byId("grilla");
+					grilla.setQuery("?nombre="+nombre);
+				}
+				
+				dialogoAgregar = function() { // Funcion para mostrar el formulario
+					
+					var handle = dojo.connect(dojo.byId("enviarCliente"), "onclick", function(e){
+						agregarCliente(handle);		        	    
+			        }); 				
+					
+					dijit.byId("form").reset(); //Ponemos casillas en blanco ya que se pudo haber usado el formulario para editar y haber quedado info alli
+					dijit.byId("dialogo").show(); //Mostramos el dialogo que contiene el formulario	
+				}
+				
+				dialogoEditar = function() { // Funcion para mostrar el formulario			
+					
+					var grilla = dijit.byId("grilla");
+	                var id = null;
+			        try{
+			        	id = grilla.store.getValues(grilla.selection.getSelected()[0], "id");		                
+			        }
+			        catch (e){}
+			        if (id == null){
+			            alert("No hay ningun registro para editar seleccionado !");
+			            return;
+			        }
+			        else{
+			        	
+						var handle = dojo.connect(dojo.byId("enviarCliente"), "onclick", function(e){
+							editarCliente(handle,id);	        	    
+				        }); 
+			        	
+			        	
+			        	dijit.byId("dialogo").show(); //Mostramos el dialogo que contiene el formulario 
+			        	dojo.byId('nombre').value=grilla.store.getValues(grilla.selection.getSelected()[0], "nombre");
+			        	dojo.byId('telefono').value=grilla.store.getValues(grilla.selection.getSelected()[0], "telefono");
+			        	dojo.byId('nacimiento').value=grilla.store.getValues(grilla.selection.getSelected()[0], "nacimiento");		        	
+			        }
+					
+				}
+				
+				editarCliente = function(handle,id){
+					var form = dijit.byId("form"); //Capturamos el objeto del formulario
+					if(!form.validate()){ //Si no es valido
+						alert('Ta mal!'); // Mostramos una advertencis
+						return false; // Y aboratmos ! (el codigo no sigue)
+					}										
+					var grilla = dijit.byId("grilla");	//Capturamo el objeto grilla
+	              try{
+						dijit.byId("dialogo").hide(); //Ocultamos el Dialogo que contiene el formulario							
+						var formObjeto = dojo.formToObject("form"); //Converte a objeto los campos del formulario								
+						formObjeto["id"]=id; //En "data" viene el id generado por el servidor al insertar, lo ponemos en el campo "id" que es el campo que nos falta
+						grilla.store.fetchItemByIdentity({identity: id, onItem: function (item){
+				        	grilla.store.setValue(item, "nombre", formObjeto["nombre"]);
+				      		grilla.store.setValue(item, "telefono", formObjeto["telefono"]);
+				        	grilla.store.setValue(item, "nacimiento", formObjeto["nacimiento"]);}
+							//grilla.store.setValues(formObjeto);}
+		                });
+						grilla.store.save();
+
+						//dojo.byId("nacimiento").value
+						//alert(dojo.byId("nacimiento").value);
+						//grilla.store.setValue(item, "nacimiento", formObjeto["nacimiento"]);// Definimos manualmente porque da problemas con el formato de fecha
+		                dojo.disconnect(handle);
+	                }
+	                catch (e){
+	                    alert('Error al actualizar!');
+	                }						
+				}
+				
+				agregarCliente = function(handle) { // Funcion par guardar el formulario
+					var form = dijit.byId("form"); //Capturamos el objeto del formulario
+					if(!form.validate()){ //Si no es valido
+						alert('Ta mal!'); // Mostramos una advertencis
+						return false; // Y aboratmos ! (el codigo no sigue)
+					}					
+					var grilla = dijit.byId("grilla");	//Capturamo el objeto grilla
+	              try{
+	                	dijit.byId("dialogo").hide(); //Ocultamos el Dialogo que contiene el formulario		
+	                	var formObjeto = dojo.formToObject("form"); //Convierte a objeto los campos del formulario
+	                	grilla.store.newItem(formObjeto); //En formObjeto tenemos todo, solo falta mostrarlo en la grilla para "notificar" que se agrego correctamente el registro
+                 
+	                    //formObjeto["nacimiento"]= dojo.byId("nacimiento").value; // Definimos manualmente porque da problemas con el formato de fecha
+	                	grilla.store.save();	                    
+	                    dojo.disconnect(handle);
+	                }
+	                catch (e){
+	                    alert('Error al enviar!');
+	                }						
+					//dojo.byId("response").innerHTML = "El formulario se esta enviando"; // Pequeño truco para dar noticias de lo que esta pasando antes de hacer el POST
+
+				}
+				
+				eliminarCliente = function (){
+					var grilla = dijit.byId("grilla");
+	                var id = null;
+			        try{
+			        	id = grilla.store.getValues(grilla.selection.getSelected()[0], "id");		                
+			        }
+			        catch (e){
+			        	alert("No hay ningun registro para borrar seleccionado !");
+			            return;
+				    }
+	                var checkResult = confirm("Seguro que quieres borrar el registro con id " + id + " ?");
+	                if (checkResult == false){
+	                    return;
+	                }           
+	                try{
+	                    grilla.store.deleteItem(grilla.selection.getSelected()[0]);
+	                    grilla.store.save();
+	                }
+	                catch (e){
+	                    alert('Error al enviar la orden de borrado al servidor!');
+	                }
+	            }
+			});
+			
+		</script>
+	</head>
+<body class="claro">
+	
+	<div data-dojo-type="dijit.layout.ContentPane" data-dojo-props="splitter:false, region:'top'">
+		<div id="toolbar" data-dojo-type="dijit.Toolbar">
+			<div data-dojo-type="dijit.form.Button" onclick="dialogoAgregar" id="new" data-dojo-props="iconClass:'dijitEditorIcon dijitEditorIconNewPage', showLabel:true">Nuevo</div>
+		    <div data-dojo-type="dijit.form.Button" onclick="dialogoEditar" id="edit" data-dojo-props="iconClass:'dijitEditorIcon dijitEditorIconCopy', showLabel:true">Editar</div>
+		    <div data-dojo-type="dijit.form.Button" onclick="eliminarCliente" id="delete" data-dojo-props="iconClass:'dijitEditorIcon dijitEditorIconDelete', showLabel:true">Borrar</div>
+		    
+		    <div type="text" name="buscar" id="buscar" onkeyup="buscar" placeholder="Escribe aqui para buscar" dojoType="dijit.form.TextBox"></div>
+				
+		    
+		    
+		</div>
+	</div>
+	<div data-dojo-type="dijit.layout.ContentPane" data-dojo-props="splitter:false, region:'center'">
+	    <table id="grilla" rowsPerPage="3" data-dojo-type="dojox.grid.DataGrid" store="store" >
+			<thead>
+				<tr>
+					<th field="id" width="30px">Id</th>
+			    	<th field="nombre" width="250px">Nombre</th>
+			    	<th field="telefono" width="200px">Telefono</th>
+			    	<th field="nacimiento" width="200px">Nacimiento</th>
+			    </tr>
+			</thead>
+		</table>
+	</div>
+			
+	<div class="dijitHidden">		
+		<div data-dojo-type="dijit.Dialog" style="width:400px;" data-dojo-props="title:'Cliente'" id="dialogo">
+			<form dojoType="dijit.form.Form" action="clientesjson" method="POST" id="form">
+				<strong><label for="nombre" style="display:inline-block;width:100px;">Nombre:</label></strong>
+				<input type="text" 
+					required="true" 
+					name="nombre" 
+					id="nombre" 
+					placeholder="Pon el nombre" 
+					dojoType="dijit.form.ValidationTextBox" 
+					missingMessage="Es obligatorio poner el nombre !" />
+				<br />
+				<strong><label for="telefono" style="display:inline-block;width:100px;">Telefono:</label></strong>
+				<input type="text" 
+					required="true" 
+					name="telefono" 
+					id="telefono" 
+					dojoType="dijit.form.NumberTextBox" 
+					constraints="{min:20,max:20000,places:0}"
+					invalidMessage="Eso no es un numero"
+					missingMessage="Es obligatorio poner el telefono !" />
+				<br />
+				<strong><label for="nacimiento" style="display:inline-block;width:100px;">Nacimiento:</label></strong>
+				<input type="text" 
+					required="true" 
+					name="nacimiento" 
+					id="nacimiento" 
+					dojoType="dijit.form.DateTextBox"
+					missingMessage="Es obligatorio poner la fecha !" />
+				<br />
+				<div class="dijitDialogPaneActionBar">
+		               <button id="enviarCliente" name="enviarCliente" data-dojo-type="dijit.form.Button">Guardar</button>
+		       	</div>
+			</form>
+		</div>
+	</div>
+	<div id="response"></div>
+	</body>
+</html>
+
+
+
+   

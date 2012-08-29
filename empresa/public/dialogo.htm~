@@ -1,0 +1,95 @@
+<!DOCTYPE HTML>
+<html lang="es">
+	<head>
+		<meta charset="utf-8">
+		<title>Prueba Dialogo</title>
+		<link rel="stylesheet" href="js/dijit/themes/claro/claro.css" />		
+		<!-- cargamos dojo y configuramos de forma declarativa -->
+		<script src="js/dojo/dojo.js" data-dojo-config="isDebug: true, async: true, parseOnLoad: true"></script>		
+		<script>
+			// Requerimos la calse para el dialogo
+			require(["dijit/registry", "dijit/Dialog", "dijit/form/Form", "dijit/form/Button", "dijit/form/DateTextBox", "dijit/form/ValidationTextBox", "dojox/validate", "dojo/_base/xhr", "dojo/on", "dojo/dom", "dojo/domReady!"], function(registry,validate,xhr,on,dom){
+				// Mostramos el dialogo
+				mostrarDialogo = function() {
+					registry.byId("ajaxDialogo").show();
+				}
+				// Ocultamos el dialogo
+				ocultarDialogo = function() {
+					registry.byId("ajaxDialogo").hide();
+				}		
+			});
+		</script>
+	</head>
+	<body class="claro">
+		<button data-dojo-type="dijit.form.Button" onclick="mostrarDialogo();">Nuevo Cliente</button>	
+		<div class="dijitHidden">		
+		<div data-dojo-type="dijit.Dialog" style="width:400px;" data-dojo-props="title:'Cliente'" id="ajaxDialogo">
+			<form dojoType="dijit.form.Form" method="post" id="formulario">
+			
+			<script type="dojo/method" event="onSubmit">
+				if(this.validate()){
+					//return confirm('Esta todo OK !');
+					// Obtenemos el div donde van los resultados
+					var monitor = dom.byId("monitor");						
+					// Post the form information
+					return alert('Se esta enviando algo?');
+					xhr.post({
+						// La URL del pedido
+						url: "envio-formulario.php",
+						// Form to send
+						form: dom.byId("formulario"),
+						// Mostramos el resulao enviado al servidor
+						load: function(newContent) {							
+							monitor.style.display = "block";
+							monitor.innerHTML = newContent;
+						},
+						// En caso de error al enviar
+						error: function() {
+							alert('El formulario no se pudo mandar');
+						}
+					});
+				}else{
+					alert('Hay datos invalidos en el formulario, corrije !');
+					return false;
+				}
+				return true;
+			</script>
+
+			<strong><label for="nombre" style="display:inline-block;width:100px;">Nombre:</label></strong>
+			<input type="text" 
+				required="true" 
+				name="nombre" 
+				id="nombre" 
+				placeholder="Pon el nombre" 
+				dojoType="dijit.form.ValidationTextBox" 
+				missingMessage="Es obligatorio poner el nombre !" />
+			<br />
+			<strong><label for="telefono" style="display:inline-block;width:100px;">Telefono:</label></strong>
+			<input type="text" 
+				required="true" 
+				name="telefono" 
+				id="telefono" 
+				placeholder="Pon el telefono" 
+				dojoType="dijit.form.ValidationTextBox" 
+				missingMessage="Es obligatorio poner el telefono !" />
+			<br />
+			<strong><label for="nacimiento" style="display:inline-block;width:100px;">Nacimiento:</label></strong>
+			<input type="text" 
+				required="true" 
+				name="nacimiento" 
+				id="nacimiento" 
+				placeholder="Pon la fecha"
+				dojoType="dijit.form.DateTextBox"
+				missingMessage="Es obligatorio poner la fecha !" />
+			<br />
+			<input 
+				type="submit" 
+				value="Guardar"
+				label="Guardar"
+				id="guardar"
+				dojoType="dijit.form.Button" />
+			</form>
+		</div></div>
+		<pre id="monitor">Mensajes</pre>
+	</body>
+</html>
